@@ -1,0 +1,13 @@
+{
+  "name": "inputs",
+  "version": "1.0.0",
+  "main": "index.js",
+  "license": "MIT",
+  "dependencies": {
+    "pngjs": "^7.0.0",
+    "sharp": "^0.33.5"
+  },
+  "devDependencies": {
+    "@types/pngjs": "^6.0.5"
+  }
+}
