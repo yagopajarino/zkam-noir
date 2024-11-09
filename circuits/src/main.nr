@@ -1,6 +1,5 @@
 fn main(image: [Field; 10000 * 4], hash_indexes: [Field; 256], hash_to_check: [u8; 256]) {
     assert(hash_indexes.len() == 256);
-    assert(image[0] == 15);
 
     let mut hash = [0 as u8; 256];
     for i in 0..256 {
