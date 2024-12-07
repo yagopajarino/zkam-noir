@@ -1,6 +1,71 @@
-// use std::hash::poseidon;
+use std::hash::poseidon;
 
-fn main(image: [u8; 1024 * 4], hash_indexes: [u32; 256]) {
+fn concat_16(a: Field, b: Field) -> Field {
+    let new_a = a as u16 << 8;
+    let new_b = b as u16;
+    (new_a | new_b) as Field
+}
+
+fn concat_32(a: Field, b: Field) -> Field {
+    let new_a = a as u32 << 16;
+    let new_b = b as u32;
+    (new_a | new_b) as Field
+}
+
+fn concat_64(a: Field, b: Field) -> Field {
+    let new_a = a as u64 << 32;
+    let new_b = b as u64;
+    (new_a | new_b) as Field
+}
+
+fn computeMerkleRoot(hashes: [Field; 32]) -> Field {
+    let op_izq_izq = poseidon::bn254::hash_2([
+        poseidon::bn254::hash_2([
+            poseidon::bn254::hash_2([hashes[0], hashes[1]]),
+            poseidon::bn254::hash_2([hashes[2], hashes[3]]),
+        ]),
+        poseidon::bn254::hash_2([
+            poseidon::bn254::hash_2([hashes[4], hashes[5]]),
+            poseidon::bn254::hash_2([hashes[6], hashes[7]]),
+        ]),
+    ]);
+    let op_izq_der = poseidon::bn254::hash_2([
+        poseidon::bn254::hash_2([
+            poseidon::bn254::hash_2([hashes[8], hashes[9]]),
+            poseidon::bn254::hash_2([hashes[10], hashes[11]]),
+        ]),
+        poseidon::bn254::hash_2([
+            poseidon::bn254::hash_2([hashes[12], hashes[13]]),
+            poseidon::bn254::hash_2([hashes[14], hashes[15]]),
+        ]),
+    ]);
+    let op_izq = poseidon::bn254::hash_2([op_izq_izq, op_izq_der]);
+
+    let op_der_izq = poseidon::bn254::hash_2([
+        poseidon::bn254::hash_2([
+            poseidon::bn254::hash_2([hashes[16], hashes[17]]),
+            poseidon::bn254::hash_2([hashes[18], hashes[18]]),
+        ]),
+        poseidon::bn254::hash_2([
+            poseidon::bn254::hash_2([hashes[20], hashes[19]]),
+            poseidon::bn254::hash_2([hashes[22], hashes[21]]),
+        ]),
+    ]);
+    let op_der_der = poseidon::bn254::hash_2([
+        poseidon::bn254::hash_2([
+            poseidon::bn254::hash_2([hashes[24], hashes[25]]),
+            poseidon::bn254::hash_2([hashes[26], hashes[27]]),
+        ]),
+        poseidon::bn254::hash_2([
+            poseidon::bn254::hash_2([hashes[28], hashes[29]]),
+            poseidon::bn254::hash_2([hashes[30], hashes[31]]),
+        ]),
+    ]);
+    let op_der = poseidon::bn254::hash_2([op_der_izq, op_der_der]);
+    poseidon::bn254::hash_2([op_izq, op_der])
+}
+
+fn main(image: [Field; 1024 * 4], hash_indexes: [Field; 256]) {
     assert(hash_indexes.len() == 256);
     assert(image.len() == 1024 * 4);
 
@@ -9,25 +74,52 @@ fn main(image: [u8; 1024 * 4], hash_indexes: [u32; 256]) {
         hash[i] = image[hash_indexes[i] * 4 + 3] as u8 % 2;
     }
 
-    let mut image_to_hash = [0 as u8; 1024 * 4];
+    let mut image_to_hash = [0 as Field; 1024 * 4];
     for i in 0..1024 * 4 {
         image_to_hash[i] = image[i];
     }
     for i in 0..256 {
         image_to_hash[hash_indexes[i] * 4 + 3] = image[hash_indexes[i] * 4 + 3];
     }
-    let mut sup_half = [0; 512 * 4];
-    let mut inf_half = [0; 512 * 4];
-    for i in 0..512 * 4 {
-        sup_half[i] = image_to_hash[i];
+
+    let mut hashes = [0 as Field; 32];
+    let mut to_hash = [0 as Field; 16];
+    for i in 0..32 {
+        let index = i * 128;
+        for j in 0..15 {
+            to_hash[j] = concat_64(
+                concat_32(
+                    concat_16(
+                        image_to_hash[index + j * 8],
+                        image_to_hash[index + j * 8 + 1],
+                    ),
+                    concat_16(
+                        image_to_hash[index + j * 8 + 2],
+                        image_to_hash[index + j * 8 + 3],
+                    ),
+                ),
+                concat_32(
+                    concat_16(
+                        image_to_hash[index + j * 8 + 4],
+                        image_to_hash[index + j * 8 + 5],
+                    ),
+                    concat_16(
+                        image_to_hash[index + j * 8 + 6],
+                        image_to_hash[index + j * 8 + 7],
+                    ),
+                ),
+            );
+        }
+        hashes[i] = poseidon::bn254::hash_16(to_hash);
     }
 
-    for i in 0..512 * 4 {
-        inf_half[i] = image_to_hash[i + 512 * 4];
+    let merkleRoot = computeMerkleRoot(hashes);
+    println(merkleRoot);
+    println(hash);
+
+    // convert merkleRoot to bits
+    let mut merkleRoot_bits = [0 as u8; 256];
+    for i in 0..256 {
+        merkleRoot_bits[i] = (merkleRoot >> i) as u8 % 2;
     }
-    // // hash de la imagen
-    // poseidon::bn254::hash_1()
-    // for i in 0..256 {
-    //     assert(hash_to_check[i] == hash[i]);
-    // }
 }
