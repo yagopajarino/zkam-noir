@@ -44,14 +44,10 @@ function embedHashToImage(inputPath: string, outputPath: string, colorear: boole
             const prover = `hash_indexes = [${hashPositions.map(i => `"${i}"`)}]\nhash_to_check = [${hash.split("").map(i => `"${i}"`)}]\nimage = [${image.join(',')}]`;
             fs.writeFileSync('../circuits/Prover.toml', prover);
 
-            fs.writeFileSync('../image.txt', this.data.join(','));
-            fs.writeFileSync('../hash_indexes.txt', hashPositions.join(','));
-            fs.writeFileSync('../hast_to_check.txt', hash.split('').join(','));            
-            
             this.pack().pipe(fs.createWriteStream(outputPath))
                 .on('finish', () => console.log(`Image hashed and saved to ${outputPath}`));
         });
 }
 
 // Example usage
-embedHashToImage('../images/lionel-copa-chikito.png', '../images/output/lionel-hasheado.png', false);
+embedHashToImage('../images/source/lionel-copa-chikito.png', '../images/output/lionel-hasheado.png', false);
