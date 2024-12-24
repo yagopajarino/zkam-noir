@@ -69,9 +69,9 @@ fn main(image: [Field; 1024 * 4], hash_indexes: [Field; 256]) {
     assert(hash_indexes.len() == 256);
     assert(image.len() == 1024 * 4);
 
-    let mut hash = [0 as u8; 256];
+    let mut hash = [0 as u1; 256];
     for i in 0..256 {
-        hash[i] = image[hash_indexes[i] * 4 + 3] as u8 % 2;
+        hash[i] = (image[hash_indexes[i] * 4 + 3] as u8 % 2) as u1;
     }
 
     let mut image_to_hash = [0 as Field; 1024 * 4];
@@ -79,7 +79,7 @@ fn main(image: [Field; 1024 * 4], hash_indexes: [Field; 256]) {
         image_to_hash[i] = image[i];
     }
     for i in 0..256 {
-        image_to_hash[hash_indexes[i] * 4 + 3] = image[hash_indexes[i] * 4 + 3];
+        image_to_hash[hash_indexes[i] * 4 + 3] = 255;
     }
 
     let mut hashes = [0 as Field; 32];
@@ -114,12 +114,8 @@ fn main(image: [Field; 1024 * 4], hash_indexes: [Field; 256]) {
     }
 
     let merkleRoot = computeMerkleRoot(hashes);
-    println(merkleRoot);
-    println(hash);
-
-    // convert merkleRoot to bits
-    let mut merkleRoot_bits = [0 as u8; 256];
+    let bits: [u1; 256] = merkleRoot.to_be_bits();
     for i in 0..256 {
-        merkleRoot_bits[i] = (merkleRoot >> i) as u8 % 2;
+        assert(bits[i] == hash[i]);
     }
 }
