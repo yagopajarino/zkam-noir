@@ -86,7 +86,7 @@ fn main(image: [Field; 1024 * 4], hash_indexes: [Field; 256]) {
     let mut to_hash = [0 as Field; 16];
     for i in 0..32 {
         let index = i * 128;
-        for j in 0..15 {
+        for j in 0..16 {
             to_hash[j] = concat_64(
                 concat_32(
                     concat_16(
